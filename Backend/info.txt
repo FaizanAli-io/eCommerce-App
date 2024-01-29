@@ -1,3 +1,5 @@
-faizanali
-admin@example.com
-adminpass1234
+SUPERUSER:-
+email: admin@example.com
+password: 123
+
+NORMAL USER:-
