@@ -1,9 +1,11 @@
-from rest_framework.routers import SimpleRouter
+from django.urls import path
 
-from .views import ConsumerViewSet
+from . import views
 
-router = SimpleRouter()
-router.register('', ConsumerViewSet)
+app_name = 'consumer'
 
-app_name = 'user'
-urlpatterns = router.urls
+urlpatterns = [
+    path('', views.ConsumerListView.as_view(), name='list'),
+    path('token', views.CreateTokenView.as_view(), name='token'),
+    path('<int:pk>', views.ConsumerDetailView.as_view(), name='detail'),
+]
