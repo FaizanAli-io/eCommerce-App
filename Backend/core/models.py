@@ -15,7 +15,8 @@ class ConsumerManager(BaseUserManager):
 
         user = self.model(email=self.normalize_email(email), **kwargs)
         user.set_password(password)
-        if kwargs['is_superuser']:
+
+        if kwargs.get('is_superuser'):
             user.is_staff = True
 
         user.save(using=self._db)
