@@ -11,21 +11,24 @@ from rest_framework.authtoken.views import ObtainAuthToken
 from django.contrib.auth import get_user_model
 
 from .serializers import (
-    ConsumerSerializer,
+    UserSerializer,
     AuthTokenSerializer,
 )
 
 
-class ConsumerListView(generics.ListCreateAPIView):
-    serializer_class = ConsumerSerializer
+class UserListView(generics.ListCreateAPIView):
+    serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
     pagination_class = pagination.PageNumberPagination
 
 
-class ConsumerDetailView(generics.RetrieveUpdateDestroyAPIView):
-    serializer_class = ConsumerSerializer
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
     authentication_classes = [authentication.TokenAuthentication]
+
+    def get_object(self):
+        return self.request.user
 
 
 class CreateTokenView(ObtainAuthToken):

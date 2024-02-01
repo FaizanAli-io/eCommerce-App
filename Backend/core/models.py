@@ -6,46 +6,61 @@ from django.contrib.auth.models import (
     BaseUserManager,
 )
 
+from django.conf import settings
 
-class ConsumerManager(BaseUserManager):
+from django.utils.translation import gettext_lazy as _
 
-    def create_user(self, email, password=None, **kwargs):
+
+class UserManager(BaseUserManager):
+
+    def create_user(self, email, password=None, clean_user=True, **kwargs):
         if not email:
             raise ValueError('User must have an email address')
 
         user = self.model(email=self.normalize_email(email), **kwargs)
         user.set_password(password)
 
-        if kwargs.get('is_superuser'):
+        if kwargs.get('category') == User.UserCategory.ADMIN:
+            user.is_superuser = True
             user.is_staff = True
 
-        user.save(using=self._db)
+        user.save()
+        if clean_user:
+            user.full_clean()
+
         return user
 
+    def create_superuser(self, email, password):
+        return self.create_user(email, password, clean_user=False,
+                                category=User.UserCategory.ADMIN)
 
-class Consumer(AbstractBaseUser, PermissionsMixin):
+
+class User(AbstractBaseUser, PermissionsMixin):
+
+    class UserCategory(models.TextChoices):
+        CONSUMER = 0, _('Consumer')
+        VENDOR = 1, _('Vendor')
+        ADMIN = 2, _('Admin')
+
     name = models.CharField(max_length=255)
+    email = models.EmailField(max_length=255, unique=True)
+    category = models.CharField(
+        max_length=10,
+        choices=UserCategory.choices,
+        default=UserCategory.CONSUMER,
+    )
+
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    email = models.EmailField(max_length=255, unique=True)
-
-    objects = ConsumerManager()
+    is_superuser = models.BooleanField(default=False)
 
     USERNAME_FIELD = 'email'
-
-
-class Vendor(models.Model):
-    name = models.CharField(max_length=255)
-    desc = models.TextField(blank=True)
-
-    def __str__(self) -> str:
-        return f'{self.name} - {self.desc}'
+    objects = UserManager()
 
 
 class Product(models.Model):
-    seller = models.ForeignKey(Vendor, on_delete=models.CASCADE,
-                               related_name="products")
-
+    user = models.ForeignKey(settings.AUTH_USER_MODEL,
+                             on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     desc = models.TextField(blank=True)
     stock = models.IntegerField()

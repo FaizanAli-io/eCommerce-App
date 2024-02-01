@@ -1,13 +1,9 @@
 from rest_framework.routers import SimpleRouter
 
-from .views import (
-    VendorViewSet,
-    ProductViewSet,
-)
+from .views import ProductViewSet
 
 router = SimpleRouter()
-router.register('vendors', VendorViewSet)
-router.register('products', ProductViewSet)
+router.register('', ProductViewSet)
 
-app_name = 'market'
+app_name = 'products'
 urlpatterns = router.urls

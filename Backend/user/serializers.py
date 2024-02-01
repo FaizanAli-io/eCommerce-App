@@ -8,15 +8,25 @@ from django.contrib.auth import (
 from django.utils.translation import gettext_lazy as _
 
 
-class ConsumerSerializer(serializers.ModelSerializer):
+class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = get_user_model()
-        fields = ['name', 'email', 'password']
+        fields = ['name', 'email', 'password', 'category']
         extra_kwargs = {'password': {'write_only': True, 'min_length': 5}}
 
     def create(self, validated_data):
         return get_user_model().objects.create_user(**validated_data)
+
+    def update(self, instance, validated_data):
+        pwd = validated_data.pop('password', None)
+        user = super().update(instance, validated_data)
+
+        if pwd:
+            user.set_password(pwd)
+            user.save()
+
+        return user
 
 
 class AuthTokenSerializer(serializers.Serializer):

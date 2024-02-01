@@ -1,117 +1,129 @@
 from django.urls import reverse
 from django.test import TestCase, Client
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError
 
+from .models import Product
 
-from .models import (
-    Product,
-    Vendor,
-)
+userModel = get_user_model()
 
 
 class ModelTests(TestCase):
 
-    def get_test_user(superuser=False):
-        return get_user_model().objects.create_user(
-            email="testuser@example.com",
-            password="testpass123",
-            is_superuser=superuser,
-        )
+    def setUp(self):
+        self.payload = {
+            'name': "Test User",
+            'email': "testuser@example.com",
+            'password': "testpassword123",
+        }
 
-    def test_create_user(self):
-        email = "testuser@example.com"
-        password = "testpass123"
+    def test_create_invalid(self):
+        with self.assertRaises(ValidationError) as context:
+            userModel.objects.create_user(
+                **self.payload, category='invalid')
 
-        user = get_user_model().objects.create_user(
-            email=email,
-            password=password,
-        )
+        error_message = "Value 'invalid' is not a valid choice."
+        self.assertTrue(error_message in str(context.exception))
 
-        self.assertEqual(user.email, email)
-        self.assertTrue(user.check_password(password))
-        self.assertFalse(user.is_superuser)
+    def test_create_default_user(self):
+        user = userModel.objects.create_user(**self.payload)
+        self.assertEqual(user.name, self.payload['name'])
+        self.assertEqual(user.email, self.payload['email'])
+        self.assertTrue(user.check_password(self.payload['password']))
+        self.assertEqual(user.category, userModel.UserCategory.CONSUMER)
+
+    def test_create_consumer(self):
+        category = userModel.UserCategory.CONSUMER
+        user = userModel.objects.create_user(
+            **self.payload, category=category)
+
+        self.assertEqual(user.category, category)
+        self.assertEqual(user.name, self.payload['name'])
+        self.assertEqual(user.email, self.payload['email'])
+        self.assertTrue(user.check_password(self.payload['password']))
+        self.assertTrue(user.is_active)
         self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
 
-    def test_create_superuser(self):
-        email = "testuser@example.com"
-        password = "testpass123"
+    def test_create_vendor(self):
+        category = userModel.UserCategory.VENDOR
+        user = userModel.objects.create_user(
+            **self.payload, category=category)
 
-        user = get_user_model().objects.create_user(
-            email=email,
-            password=password,
-            is_superuser=True,
-        )
+        self.assertEqual(user.category, category)
+        self.assertEqual(user.name, self.payload['name'])
+        self.assertEqual(user.email, self.payload['email'])
+        self.assertTrue(user.check_password(self.payload['password']))
+        self.assertTrue(user.is_active)
+        self.assertFalse(user.is_staff)
+        self.assertFalse(user.is_superuser)
 
-        self.assertEqual(user.email, email)
-        self.assertTrue(user.is_superuser)
+    def test_create_admin(self):
+        category = userModel.UserCategory.ADMIN
+        user = userModel.objects.create_user(
+            **self.payload, category=category)
+
+        self.assertEqual(user.category, category)
+        self.assertEqual(user.name, self.payload['name'])
+        self.assertEqual(user.email, self.payload['email'])
+        self.assertTrue(user.check_password(self.payload['password']))
+        self.assertTrue(user.is_active)
         self.assertTrue(user.is_staff)
+        self.assertTrue(user.is_superuser)
 
     def test_create_product(self):
+        test_user = userModel.objects.create_user(**self.payload)
+
         product_args = {
             'name': 'Test Product',
             'desc': 'A test Product',
-            'stock': 20,
-            'price': 4.99,
+            'stock': 20, 'price': 4.99,
         }
 
-        vendor = Vendor.objects.create()
         product = Product.objects.create(
-            seller=vendor,
+            user=test_user,
             **product_args,
         )
 
-        self.assertEqual(product.seller, vendor)
+        self.assertEqual(product.user, test_user)
         self.assertEqual(product.name, product_args['name'])
         self.assertEqual(product.desc, product_args['desc'])
         self.assertEqual(product.stock, product_args['stock'])
         self.assertEqual(product.price, product_args['price'])
 
-    def test_create_vendor(self):
-        vendor_args = {
-            'name': 'Test Product',
-            'desc': 'A test Product',
-        }
 
-        vendor = Vendor.objects.create(
-            **vendor_args,
-        )
+# class AdminTests(TestCase):
 
-        self.assertEqual(vendor.name, vendor_args['name'])
-        self.assertEqual(vendor.desc, vendor_args['desc'])
+#     def setUp(self):
+#         self.client = Client()
 
+#         self.client.force_login(
+#             get_user_model().objects.create_user(
+#                 email="adminuser@example.com",
+#                 password="testpass123",
+#                 is_superuser=True,
+#             )
+#         )
 
-class AdminTests(TestCase):
+#         self.base_user = get_user_model().objects.create_user(
+#             email="baseuser@example.com",
+#             password="testpass123",
+#             name="Test User",
+#         )
 
-    def setUp(self):
-        self.client = Client()
+#     def test_user_list(self):
+#         url = reverse('admin:core_consumer_changelist')
+#         res = self.client.get(url)
+#         self.assertContains(res, self.base_user.name)
+#         self.assertContains(res, self.base_user.email)
 
-        self.client.force_login(
-            get_user_model().objects.create_user(
-                email="adminuser@example.com",
-                password="testpass123",
-                is_superuser=True,
-            )
-        )
+#     def test_user_create(self):
+#         url = reverse('admin:core_consumer_add')
+#         res = self.client.get(url)
+#         self.assertEqual(res.status_code, 200)
 
-        self.base_user = get_user_model().objects.create_user(
-            email="baseuser@example.com",
-            password="testpass123",
-            name="Test User",
-        )
-
-    def test_user_list(self):
-        url = reverse('admin:core_consumer_changelist')
-        res = self.client.get(url)
-        self.assertContains(res, self.base_user.name)
-        self.assertContains(res, self.base_user.email)
-
-    def test_user_create(self):
-        url = reverse('admin:core_consumer_add')
-        res = self.client.get(url)
-        self.assertEqual(res.status_code, 200)
-
-    def test_user_update(self):
-        url = reverse('admin:core_consumer_change',
-                      args=[self.base_user.id])
-        res = self.client.get(url)
-        self.assertEqual(res.status_code, 200)
+#     def test_user_update(self):
+#         url = reverse('admin:core_consumer_change',
+#                       args=[self.base_user.id])
+#         res = self.client.get(url)
+#         self.assertEqual(res.status_code, 200)

@@ -1,5 +1,4 @@
 SUPERUSER:-
-token: "9615c0a692344837320b53b5e49754036c3864f5"
 email: admin@example.com
 password: 123
 
