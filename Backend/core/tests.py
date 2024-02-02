@@ -92,38 +92,39 @@ class ModelTests(TestCase):
         self.assertEqual(product.price, product_args['price'])
 
 
-# class AdminTests(TestCase):
+class AdminTests(TestCase):
 
-#     def setUp(self):
-#         self.client = Client()
+    def setUp(self):
+        self.client = Client()
 
-#         self.client.force_login(
-#             get_user_model().objects.create_user(
-#                 email="adminuser@example.com",
-#                 password="testpass123",
-#                 is_superuser=True,
-#             )
-#         )
+        self.client.force_login(
+            get_user_model().objects.create_user(
+                category=userModel.UserCategory.ADMIN,
+                email="adminuser@example.com",
+                password="testpass123",
+                name="Admin User",
+            )
+        )
 
-#         self.base_user = get_user_model().objects.create_user(
-#             email="baseuser@example.com",
-#             password="testpass123",
-#             name="Test User",
-#         )
+        self.base_user = userModel.objects.create_user(
+            email="baseuser@example.com",
+            password="testpass123",
+            name="Test User",
+        )
 
-#     def test_user_list(self):
-#         url = reverse('admin:core_consumer_changelist')
-#         res = self.client.get(url)
-#         self.assertContains(res, self.base_user.name)
-#         self.assertContains(res, self.base_user.email)
+    def test_user_list(self):
+        res = self.client.get(reverse(
+            'admin:core_user_changelist'))
+        self.assertContains(res, self.base_user.name)
+        self.assertContains(res, self.base_user.email)
 
-#     def test_user_create(self):
-#         url = reverse('admin:core_consumer_add')
-#         res = self.client.get(url)
-#         self.assertEqual(res.status_code, 200)
+    def test_user_create(self):
+        res = self.client.get(reverse(
+            'admin:core_user_add'))
+        self.assertEqual(res.status_code, 200)
 
-#     def test_user_update(self):
-#         url = reverse('admin:core_consumer_change',
-#                       args=[self.base_user.id])
-#         res = self.client.get(url)
-#         self.assertEqual(res.status_code, 200)
+    def test_user_update(self):
+        res = self.client.get(reverse(
+            'admin:core_user_change',
+            args=[self.base_user.id]))
+        self.assertEqual(res.status_code, 200)

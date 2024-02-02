@@ -1,5 +1,4 @@
 from rest_framework import (
-    pagination,
     permissions,
     authentication,
 )
@@ -16,10 +15,23 @@ from .serializers import (
 )
 
 
-class UserListView(generics.ListCreateAPIView):
+class UserCreateView(generics.CreateAPIView):
     serializer_class = UserSerializer
     queryset = get_user_model().objects.all()
-    pagination_class = pagination.PageNumberPagination
+
+
+class TokenCreateView(ObtainAuthToken):
+    serializer_class = AuthTokenSerializer
+    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
+
+
+class TokenDeleteView(generics.DestroyAPIView):
+    serializer_class = AuthTokenSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    authentication_classes = [authentication.TokenAuthentication]
+
+    def get_object(self):
+        return self.request.user.auth_token
 
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -29,8 +41,3 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_object(self):
         return self.request.user
-
-
-class CreateTokenView(ObtainAuthToken):
-    serializer_class = AuthTokenSerializer
-    renderer_classes = api_settings.DEFAULT_RENDERER_CLASSES
