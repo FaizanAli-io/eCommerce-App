@@ -82,60 +82,53 @@ class PublicUserAPITests(TestCase):
 class PrivateUserAPITests(TestCase):
 
     def setUp(self):
-        self.user_password = 'testpass123'
-        self.user = get_user_model().objects.create_user(
-            name='Base User',
-            email='base@example.com',
-            password=self.user_password,
-        )
-
         self.client = APIClient()
-        self.client.force_authenticate(user=self.user)
+        self.auth_client = APIClient()
+        self.user_password = 'testpass123'
 
-    def test_token_working(self):
-        self.unauth_client = APIClient()
-        token = self.unauth_client.post(LOGIN_URL, {
-            'email': self.user.email,
-            'password': self.user_password,
-        }).data['token']
+        self.user = get_user_model().objects.create_user(
+            name='Base User', email='base@example.com',
+            password=self.user_password)
 
-        headers = {'Authorization': f'Token {token}'}
-        res = self.unauth_client.get(PROFILE_URL, headers=headers)
+        self.auth_client.force_authenticate(user=self.user)
 
-        self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(res.data['name'], self.user.name)
-        self.assertEqual(res.data['email'], self.user.email)
-        self.assertEqual(res.data['category'], self.user.category)
-
-    def test_delete_token_good_creds(self):
+    def get_token_headers(self):
         token = self.client.post(LOGIN_URL, {
             'email': self.user.email,
             'password': self.user_password,
         }).data['token']
-        headers = {'Authorization': f'Token {token}'}
 
-        res = self.client.delete(LOGOUT_URL)
+        return {'Authorization': f'Token {token}'}
 
-        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+    def test_delete_token(self):
+        headers = self.get_token_headers()
+        res_initial = self.client.get(PROFILE_URL, headers=headers)
+        res_delete = self.client.delete(LOGOUT_URL, headers=headers)
+        res_final = self.client.get(PROFILE_URL, headers=headers)
 
-#     def test_get_profile(self):
-#         res = self.client.get(PROFILE_URL)
+        self.assertEqual(res_initial.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_delete.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertEqual(res_final.status_code, status.HTTP_401_UNAUTHORIZED)
 
-#         self.assertEqual(res.status_code, status.HTTP_200_OK)
-#         self.assertEqual(res.data, {
-#             'name': self.user.name,
-#             'email': self.user.email,
-#         })
+    def test_get_profile(self):
+        res = self.auth_client.get(PROFILE_URL)
 
-#     def test_post_profile_not_allowed(self):
-#         res = self.client.post(PROFILE_URL)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.data, {
+            'name': self.user.name,
+            'email': self.user.email,
+            'category': self.user.category,
+        })
 
-#         self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+    def test_post_profile_not_allowed(self):
+        res = self.auth_client.post(PROFILE_URL)
 
-#     def test_updating_user_profile(self):
-#         payload = {'name': 'New Name', 'password': 'newpass123'}
-#         res = self.client.patch(PROFILE_URL, payload)
+        self.assertEqual(res.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
-#         self.assertEqual(res.status_code, status.HTTP_200_OK)
-#         self.assertEqual(self.user.name, payload['name'])
-#         self.assertTrue(self.user.check_password(payload['password']))
+    def test_updating_user_profile(self):
+        payload = {'name': 'New Name', 'password': 'newpass123'}
+        res = self.auth_client.patch(PROFILE_URL, payload)
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(self.user.name, payload['name'])
+        self.assertTrue(self.user.check_password(payload['password']))
