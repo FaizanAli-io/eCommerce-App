@@ -1,0 +1,16 @@
+User table should be linked to two other tables
+	-> Consumers
+	-> Vendors
+
+Add cart functionality
+Add transaction storing
+Add sales table which will serve as a look-up for transactions
+
+Change DB to PostGres
+
+Add endpoint for consumer and vendor to see their transaction histories
+Add endpoint for consumer cart view and vendor inventory view
+
+V1:
+	-> Update ReadMe
+	-> Restrict Versions
