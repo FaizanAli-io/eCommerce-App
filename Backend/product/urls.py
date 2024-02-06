@@ -5,5 +5,5 @@ from .views import ProductViewSet
 router = SimpleRouter()
 router.register('', ProductViewSet)
 
-app_name = 'products'
+app_name = 'product'
 urlpatterns = router.urls

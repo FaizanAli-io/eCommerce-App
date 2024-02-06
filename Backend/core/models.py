@@ -57,6 +57,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     USERNAME_FIELD = 'email'
     objects = UserManager()
 
+    def __str__(self) -> str:
+        return self.name
+
 
 class Product(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL,
@@ -67,4 +70,4 @@ class Product(models.Model):
     price = models.FloatField()
 
     def __str__(self) -> str:
-        return f'{self.name} - {self.seller.name}'
+        return f'{self.name} - {self.user}'
