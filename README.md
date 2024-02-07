@@ -28,16 +28,22 @@ Django Base Code for an E-Commerce Backend.
 
 - Run project: `python manage.py runserver 8000`
 
-## Commands
+# Commands
 
 Run server:
 
-```python manage.py runserver { port }```
+```
+python manage.py runserver { port }
+```
 
 Create admin user:
 
-```python manage.py createsuperuser```
+```
+python manage.py createsuperuser
+```
 
 Run all unit tests:
 
-```python manage.py test```
+```
+python manage.py test
+```
