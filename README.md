@@ -31,19 +31,20 @@ Django Base Code for an E-Commerce Backend.
 # Commands
 
 Run server:
-
 ```
 python manage.py runserver { port }
 ```
 
 Create admin user:
-
 ```
 python manage.py createsuperuser
 ```
 
 Run all unit tests:
-
 ```
 python manage.py test
 ```
+
+# Current DataBase Schema
+![image](https://github.com/FaizanAli-io/eCommerce-App/assets/50655335/a2cb63f6-0b4f-4a79-8a24-d6d5c5855b28)
+
