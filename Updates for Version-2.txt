@@ -10,7 +10,3 @@ Change DB to PostGres
 
 Add endpoint for consumer and vendor to see their transaction histories
 Add endpoint for consumer cart view and vendor inventory view
-
-V1:
-	-> Update ReadMe
-	-> Restrict Versions
