@@ -62,8 +62,8 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Product(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL,
-                             on_delete=models.CASCADE)
+    vendor = models.ForeignKey(settings.AUTH_USER_MODEL,
+                               on_delete=models.CASCADE)
     name = models.CharField(max_length=255)
     desc = models.TextField(blank=True)
     stock = models.IntegerField()
@@ -71,3 +71,15 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return f'{self.name} - {self.user}'
+
+
+class Transaction(models.Model):
+    pass
+
+
+class ProductSold(models.Model):
+    pass
+
+
+class Cart(models.Model):
+    pass
