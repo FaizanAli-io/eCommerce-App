@@ -30,4 +30,8 @@ class CustomUserAdmin(UserAdmin):
 
 
 admin.site.register(models.User, CustomUserAdmin)
+admin.site.register(models.Transaction)
+admin.site.register(models.ProductStock)
+admin.site.register(models.ProductSold)
 admin.site.register(models.Product)
+admin.site.register(models.Cart)
