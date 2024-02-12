@@ -1,7 +1,5 @@
-from rest_framework import (
-    permissions,
-    authentication,
-)
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import TokenAuthentication
 
 from rest_framework.viewsets import generics
 from rest_framework.settings import api_settings
@@ -27,8 +25,8 @@ class TokenCreateView(ObtainAuthToken):
 
 class TokenDeleteView(generics.DestroyAPIView):
     serializer_class = AuthTokenSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def get_object(self):
         return self.request.user.auth_token
@@ -36,8 +34,8 @@ class TokenDeleteView(generics.DestroyAPIView):
 
 class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
-    authentication_classes = [authentication.TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [TokenAuthentication]
 
     def get_object(self):
         return self.request.user

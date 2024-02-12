@@ -11,6 +11,7 @@ VERSION = 2.0
 urlpatterns = [
     path(f'v{VERSION}/admin/', admin.site.urls),
     path(f'v{VERSION}/user/', include('user.urls')),
+    path(f'v{VERSION}/sales/', include('sales.urls')),
     path(f'v{VERSION}/product/', include('product.urls')),
 
     path(f'v{VERSION}/api/schema/',

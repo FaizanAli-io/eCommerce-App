@@ -1,27 +1,24 @@
-from rest_framework.serializers import (
-    ModelSerializer,
-    StringRelatedField,
-)
+from rest_framework.serializers import ModelSerializer
 
 from core.models import Product, ProductStock
+from user.serializers import UserSerializer
 
 
 class ProductSerializer(ModelSerializer):
 
     class Meta:
         model = Product
-        exclude = ['id']
+        fields = "__all__"
 
 
 class ProductStockSerializer(ModelSerializer):
 
     product = ProductSerializer()
-
-    vendor = StringRelatedField()
+    vendor = UserSerializer(read_only=True)
 
     class Meta:
         model = ProductStock
-        exclude = ['id']
+        fields = "__all__"
 
     def create(self, validated_data):
         product_data = validated_data.pop('product')

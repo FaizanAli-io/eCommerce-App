@@ -92,7 +92,7 @@ class ConsumerAPITests(TestCase):
         data = res.data[0]
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(data['vendor'], self.user.name)
+        self.assertEqual(data['vendor']['id'], self.user.id)
         self.assertEqual(data['stock'], stock_product.stock)
         self.assertEqual(data['price'], stock_product.price)
 
@@ -172,7 +172,7 @@ class VendorAPITests(TestCase):
         res = self.client.post(LIST_CREATE_URL, payload, format="json")
 
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res.data['vendor'], self.user.name)
+        self.assertEqual(res.data['vendor']['id'], self.user.id)
         self.assertEqual(res.data['stock'], payload['stock'])
         self.assertEqual(res.data['price'], payload['price'])
 
@@ -192,7 +192,7 @@ class VendorAPITests(TestCase):
         data = res.data[0]
 
         self.assertEqual(res.status_code, status.HTTP_200_OK)
-        self.assertEqual(data['vendor'], self.user.name)
+        self.assertEqual(data['vendor']['id'], self.user.id)
         self.assertEqual(data['stock'], stock_product.stock)
         self.assertEqual(data['price'], stock_product.price)
 
