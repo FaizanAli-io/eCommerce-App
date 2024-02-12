@@ -2,8 +2,8 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.authentication import TokenAuthentication
 
-from core.models import Product
-from .serializers import ProductSerializer
+from core.models import ProductStock
+from .serializers import ProductStockSerializer
 from .permissions import ProductAPIPermission
 
 """
@@ -19,12 +19,12 @@ from .permissions import ProductAPIPermission
 
 
 class ProductViewSet(ModelViewSet):
-    serializer_class = ProductSerializer
     pagination_class = PageNumberPagination
-    queryset = Product.objects.order_by('name')
+    serializer_class = ProductStockSerializer
+    queryset = ProductStock.objects.order_by()
     permission_classes = [ProductAPIPermission]
     authentication_classes = [TokenAuthentication]
 
     def perform_create(self, serializer):
-        user = self.request.user
-        serializer.save(user=user)
+        vendor = self.request.user
+        serializer.save(vendor=vendor)

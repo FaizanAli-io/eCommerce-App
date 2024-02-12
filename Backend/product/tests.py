@@ -4,24 +4,26 @@ from django.contrib.auth import get_user_model
 
 from rest_framework import status
 from rest_framework.test import APIClient
-
-from core.models import Product
-from .serializers import ProductSerializer
+from core.models import Product, ProductStock
 
 userModel = get_user_model()
 
-LIST_CREATE_URL = reverse('product:product-list')
+LIST_CREATE_URL = reverse('product:productstock-list')
 
 
 def get_detail_url(product_id):
-    return reverse('product:product-detail', args=[product_id])
+    return reverse('product:productstock-detail', args=[product_id])
 
 
-def get_test_product(user):
-    return Product.objects.create(
-        user=user,
-        name='Test Item',
-        price=0.99, stock=1,
+def get_test_product(vendor):
+    return ProductStock.objects.create(
+        product=Product.objects.create(
+            name="Test product",
+            desc="Test description",
+        ),
+        vendor=vendor,
+        stock=500,
+        price=5.0,
     )
 
 
@@ -43,8 +45,8 @@ class PublicUserAPITests(TestCase):
         self.assertEqual(post_res.status_code, status.HTTP_401_UNAUTHORIZED)
 
     def test_product_detail_fails(self):
-        product = get_test_product(self.user)
-        detail_url = get_detail_url(product.id)
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
 
         get_res = self.client.get(detail_url)
         put_res = self.client.put(detail_url)
@@ -57,132 +59,211 @@ class PublicUserAPITests(TestCase):
         self.assertEqual(delete_res.status_code, status.HTTP_401_UNAUTHORIZED)
 
 
-class PrivateUserAPITests(TestCase):
+class ConsumerAPITests(TestCase):
     def setUp(self):
-        self.consumer_client = APIClient()
-        self.vendor_client = APIClient()
+        self.client = APIClient()
 
-        self.consumer = userModel.objects.create_user(
+        self.user = userModel.objects.create_user(
             name='Test Consumer',
             email='consumer@example.com',
             password='consumerpassword123',
             category=userModel.UserCategory.CONSUMER,
         )
 
-        self.vendor = userModel.objects.create_user(
+        self.client.force_authenticate(self.user)
+
+    def test_create_product(self):
+        payload = {
+            "product": {
+                "name": "Test Product",
+                "desc": "A product test",
+            },
+            "stock": 250,
+            "price": 2.5,
+        }
+
+        res = self.client.post(LIST_CREATE_URL, payload, format="json")
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_get_product(self):
+        stock_product = get_test_product(self.user)
+        res = self.client.get(LIST_CREATE_URL)
+        data = res.data[0]
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['vendor'], self.user.name)
+        self.assertEqual(data['stock'], stock_product.stock)
+        self.assertEqual(data['price'], stock_product.price)
+
+        self.assertEqual(
+            data['product']['name'],
+            stock_product.product.name,
+        )
+
+        self.assertEqual(
+            data['product']['desc'],
+            stock_product.product.desc,
+        )
+
+    def test_partial_update_product(self):
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+
+        payload = {
+            'product': {
+                'name': 'Updated Stock Name',
+            },
+            'stock': 250,
+        }
+
+        res = self.client.patch(detail_url, payload, format="json")
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_complete_update_product(self):
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+
+        payload = {
+            "product": {
+                "name": "Updated Test Product",
+                "desc": "An updated product test",
+            },
+            "stock": 250,
+            "price": 2.5,
+        }
+
+        res = self.client.put(detail_url, payload, format="json")
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_delete_product(self):
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+        res = self.client.delete(detail_url)
+
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+
+class VendorAPITests(TestCase):
+    def setUp(self):
+        self.client = APIClient()
+
+        self.user = userModel.objects.create_user(
             name='Test Vendor',
             email='vendor@example.com',
             password='vendorpassword123',
             category=userModel.UserCategory.VENDOR,
         )
 
-        self.consumer_client.force_authenticate(self.consumer)
-        self.vendor_client.force_authenticate(self.vendor)
+        self.client.force_authenticate(self.user)
 
-    def test_create_as_consumer(self):
-        res = self.vendor_client.post(LIST_CREATE_URL, {
-            'user': self.consumer,
-            'name': 'Consumer Test',
-            'stock': 0, 'price': 0,
-        })
-
-        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res.data['user'], self.vendor.name)
-
-    def test_get_product_list(self):
-        get_test_product(self.vendor)
-        products = Product.objects.all()
-        con_res = self.consumer_client.get(LIST_CREATE_URL)
-        ven_res = self.vendor_client.get(LIST_CREATE_URL)
-        serializer = ProductSerializer(products, many=True)
-
-        self.assertEqual(con_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(ven_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(con_res.data, serializer.data)
-        self.assertEqual(ven_res.data, serializer.data)
-
-    def test_create_product_list(self):
-
-        payload = {'name': 'Vendor Item',
-                   'price': 0.99, 'stock': 1}
-
-        con_res = self.consumer_client.post(LIST_CREATE_URL, payload)
-        ven_res = self.vendor_client.post(LIST_CREATE_URL, payload)
-
-        self.assertEqual(con_res.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(ven_res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(ven_res.data['user'], self.vendor.name)
-        self.assertEqual(ven_res.data['name'], payload['name'])
-        self.assertEqual(ven_res.data['price'], payload['price'])
-        self.assertEqual(ven_res.data['stock'], payload['stock'])
-
-    def test_get_product(self):
-        product = get_test_product(self.vendor)
-        detail_url = get_detail_url(product.id)
-        con_res = self.consumer_client.get(detail_url)
-        ven_res = self.vendor_client.get(detail_url)
-        serializer = ProductSerializer(product)
-
-        self.assertEqual(con_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(ven_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(con_res.data, serializer.data)
-        self.assertEqual(ven_res.data, serializer.data)
-
-    def test_partial_update_product(self):
-        product1 = get_test_product(self.vendor)
-        product2 = get_test_product(self.vendor)
-        detail_url1 = get_detail_url(product1.id)
-        detail_url2 = get_detail_url(product2.id)
-        payload = {'name': 'Updated Name'}
-
-        con_res = self.consumer_client.patch(detail_url1, payload)
-        ven_res = self.vendor_client.patch(detail_url2, payload)
-        patched_product1 = Product.objects.get(id=product1.id)
-        patched_product2 = Product.objects.get(id=product2.id)
-
-        self.assertEqual(con_res.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(ven_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(patched_product1.name, product1.name)
-        self.assertEqual(patched_product2.name, payload['name'])
-
-    def test_complete_update_product(self):
-        product1 = get_test_product(self.vendor)
-        product2 = get_test_product(self.vendor)
-        detail_url1 = get_detail_url(product1.id)
-        detail_url2 = get_detail_url(product2.id)
-
+    def test_create_product(self):
         payload = {
-            'name': 'Updated Name',
-            'price': 1.99, 'stock': 2,
+            "product": {
+                "name": "Test Product",
+                "desc": "A product test",
+            },
+            "stock": 250,
+            "price": 2.5,
         }
 
-        con_res = self.consumer_client.put(detail_url1, payload)
-        ven_res = self.vendor_client.put(detail_url2, payload)
-        updated_product1 = Product.objects.get(id=product1.id)
-        product2.refresh_from_db()
+        res = self.client.post(LIST_CREATE_URL, payload, format="json")
 
-        self.assertEqual(con_res.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(ven_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(product2.user, self.vendor)
-        self.assertEqual(product2.name, payload['name'])
-        self.assertEqual(product2.price, payload['price'])
-        self.assertEqual(product2.stock, payload['stock'])
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res.data['vendor'], self.user.name)
+        self.assertEqual(res.data['stock'], payload['stock'])
+        self.assertEqual(res.data['price'], payload['price'])
+
         self.assertEqual(
-            ProductSerializer(product1).data,
-            ProductSerializer(updated_product1).data,
+            res.data['product']['name'],
+            payload['product']['name'],
+        )
+
+        self.assertEqual(
+            res.data['product']['desc'],
+            payload['product']['desc'],
+        )
+
+    def test_get_product(self):
+        stock_product = get_test_product(self.user)
+        res = self.client.get(LIST_CREATE_URL)
+        data = res.data[0]
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(data['vendor'], self.user.name)
+        self.assertEqual(data['stock'], stock_product.stock)
+        self.assertEqual(data['price'], stock_product.price)
+
+        self.assertEqual(
+            data['product']['name'],
+            stock_product.product.name,
+        )
+
+        self.assertEqual(
+            data['product']['desc'],
+            stock_product.product.desc,
+        )
+
+    def test_partial_update_product(self):
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+
+        payload = {
+            'product': {
+                'name': 'Updated Stock Name',
+            },
+            'stock': 250,
+        }
+
+        res = self.client.patch(detail_url, payload, format="json")
+        stock_product.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(stock_product.stock, payload['stock'])
+
+        self.assertEqual(
+            stock_product.product.name,
+            payload['product']['name'],
+        )
+
+    def test_complete_update_product(self):
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+
+        payload = {
+            "product": {
+                "name": "Updated Test Product",
+                "desc": "An updated product test",
+            },
+            "stock": 250,
+            "price": 2.5,
+        }
+
+        res = self.client.put(detail_url, payload, format="json")
+        stock_product.refresh_from_db()
+
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(stock_product.vendor, self.user)
+        self.assertEqual(stock_product.stock, payload['stock'])
+        self.assertEqual(stock_product.price, payload['price'])
+
+        self.assertEqual(
+            stock_product.product.name,
+            payload['product']['name'],
+        )
+
+        self.assertEqual(
+            stock_product.product.desc,
+            payload['product']['desc'],
         )
 
     def test_delete_product(self):
-        product1 = get_test_product(self.vendor)
-        product2 = get_test_product(self.vendor)
+        stock_product = get_test_product(self.user)
+        detail_url = get_detail_url(stock_product.id)
+        res = self.client.delete(detail_url)
 
-        con_res = self.consumer_client.delete(get_detail_url(product1.id))
-        ven_res = self.vendor_client.delete(get_detail_url(product2.id))
-
-        product1_exists = Product.objects.filter(id=product1.id).exists()
-        product2_exists = Product.objects.filter(id=product2.id).exists()
-
-        self.assertEqual(con_res.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertEqual(ven_res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertTrue(product1_exists)
-        self.assertFalse(product2_exists)
+        self.assertEqual(res.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(ProductStock.objects.filter(
+            id=stock_product.id).exists())

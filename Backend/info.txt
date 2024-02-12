@@ -1,3 +1,4 @@
 SUPERUSER:-
+    token: 6ec50c6952a678a78b67964374e61b9ed5c0f8f7
     email: admin@example.com
     password: 123
