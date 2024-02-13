@@ -83,9 +83,9 @@ class ModelTests(TestCase):
         self.assertTrue(user.is_staff)
 
     def test_create_transaction(self):
-        buyer = userModel.objects.create_user(**self.user_payload)
-        transaction = Transaction.objects.create(buyer=buyer)
-        self.assertEqual(transaction.buyer.id, buyer.id)
+        consumer = userModel.objects.create_user(**self.user_payload)
+        transaction = Transaction.objects.create(consumer=consumer)
+        self.assertEqual(transaction.consumer.id, consumer.id)
 
     def test_create_product(self):
         product = Product.objects.create(**self.prod_payload)
@@ -110,7 +110,7 @@ class ModelTests(TestCase):
 
     def test_create_product_sold(self):
         test_user = userModel.objects.create(**self.user_payload)
-        transaction = Transaction.objects.create(buyer=test_user)
+        transaction = Transaction.objects.create(consumer=test_user)
         product = Product.objects.create(**self.prod_payload)
         payload = {"stock": 20, "price": 4.99}
 
@@ -130,16 +130,21 @@ class ModelTests(TestCase):
         product = Product.objects.create(**self.prod_payload)
         payload = {"stock": 20, "price": 4.99}
 
-        cart = Cart.objects.create(
-            buyer=test_user,
+        stock_product = ProductStock.objects.create(
+            vendor=test_user,
             product=product,
-            **payload,
+            ** payload,
         )
 
-        self.assertEqual(cart.buyer.id, test_user.id)
-        self.assertEqual(cart.product.id, product.id)
-        self.assertEqual(cart.stock, payload["stock"])
-        self.assertEqual(cart.price, payload["price"])
+        cart = Cart.objects.create(
+            product=stock_product,
+            consumer=test_user,
+        )
+
+        self.assertEqual(cart.consumer.id, test_user.id)
+        self.assertEqual(cart.product.id, stock_product.id)
+        self.assertEqual(cart.product.stock, payload["stock"])
+        self.assertEqual(cart.product.price, payload["price"])
 
 
 class AdminTests(TestCase):

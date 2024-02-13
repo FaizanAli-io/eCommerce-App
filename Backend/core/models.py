@@ -62,10 +62,15 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Transaction(models.Model):
-    buyer = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    consumer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
 
     listed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self) -> str:
+        return f'{self.id} - {self.consumer.name}'
 
 
 class Product(models.Model):
@@ -88,7 +93,8 @@ class ProductStock(models.Model):
 
 
 class ProductSold(models.Model):
-    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE)
+    transaction = models.ForeignKey(Transaction, on_delete=models.CASCADE,
+                                    related_name="products")
     product = models.ForeignKey(Product, on_delete=models.CASCADE)
     stock = models.IntegerField()
     price = models.FloatField()
@@ -98,13 +104,13 @@ class ProductSold(models.Model):
 
 
 class Cart(models.Model):
-    buyer = models.ForeignKey(settings.AUTH_USER_MODEL,
-                              on_delete=models.CASCADE)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
-    stock = models.IntegerField()
-    price = models.FloatField()
+    consumer = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+    )
 
-    added_at = models.DateTimeField(auto_now_add=True)
+    product = models.ForeignKey(ProductStock, on_delete=models.CASCADE)
+    cart_stock = models.IntegerField(default=0)
 
     def __str__(self) -> str:
-        return f"{self.buyer.name} - {self.product.name}"
+        return f"{self.product.name} - {self.consumer.name}"
