@@ -3,19 +3,8 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.authentication import TokenAuthentication
 
 from core.models import ProductStock
-from .serializers import ProductStockSerializer
 from .permissions import ProductAPIPermission
-
-"""
-
-    Views:-
-        1. Product List View
-        2. Get Specific Product View
-        3. Update Product View (auth)
-        4. Delete Product View (auth)
-        5. Create Product View (auth)
-
-"""
+from .serializers import ProductStockSerializer
 
 
 class ProductViewSet(ModelViewSet):

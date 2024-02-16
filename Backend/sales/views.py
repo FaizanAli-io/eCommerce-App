@@ -6,16 +6,19 @@ from rest_framework.authentication import TokenAuthentication
 
 from core.models import Cart, Transaction
 
+from .permissions import CartAPIPermission
 from .serializers import CartSerializer, TransactionSerializer
 
 
 class CartViewSet(ModelViewSet):
-    queryset = Cart.objects.all()
     serializer_class = CartSerializer
     pagination_class = PageNumberPagination
 
-    permission_classes = [IsAuthenticated]
+    permission_classes = [CartAPIPermission]
     authentication_classes = [TokenAuthentication]
+
+    def get_queryset(self):
+        return Cart.objects.filter(consumer=self.request.user)
 
     def perform_create(self, serializer):
         consumer = self.request.user

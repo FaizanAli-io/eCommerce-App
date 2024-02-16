@@ -109,8 +109,12 @@ class Cart(models.Model):
         on_delete=models.CASCADE,
     )
 
-    product = models.ForeignKey(ProductStock, on_delete=models.CASCADE)
-    cart_stock = models.IntegerField(default=0)
+    product = models.ForeignKey(
+        ProductStock,
+        on_delete=models.CASCADE,
+    )
+
+    cart_stock = models.IntegerField()
 
     def __str__(self) -> str:
         return f"{self.product.name} - {self.consumer.name}"

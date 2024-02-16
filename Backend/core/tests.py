@@ -139,6 +139,7 @@ class ModelTests(TestCase):
         cart = Cart.objects.create(
             product=stock_product,
             consumer=test_user,
+            cart_stock=10,
         )
 
         self.assertEqual(cart.consumer.id, test_user.id)
